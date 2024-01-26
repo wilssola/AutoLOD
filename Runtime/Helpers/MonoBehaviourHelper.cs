@@ -50,7 +50,7 @@ namespace Unity.AutoLOD
                 if (!m_MonoBehaviour)
                 {
 #if UNITY_EDITOR
-                    var go = EditorUtility.CreateGameObjectWithHideFlags("MonoBehaviourHelper", HideFlags.DontSave, typeof(Surrogate));
+                    var go = EditorUtility.CreateGameObjectWithHideFlags("MonoBehaviourHelper", HideFlags.HideAndDontSave, typeof(Surrogate));
 #else
                     var go = new GameObject("MonoBehaviourHelper", typeof(Surrogate));
 #endif
