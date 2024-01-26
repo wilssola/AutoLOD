@@ -14,6 +14,7 @@ using System.Linq;
 using System.Reflection;
 using Unity.AutoLOD.Utilities;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEditor.PackageManager;
 using UnityEngine;
 using PackageInfo = UnityEditor.PackageManager.PackageInfo;
@@ -248,6 +249,11 @@ namespace Unity.AutoLOD
                 // Cribbed from ConditionalCompilationUtility
                 // TODO: Remove when minimum version is 2019 LTS and use define constraints instead
                 var buildTargetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
+
+                #if HAS_NEW_PACKAGE_MANAGER
+                NamedBuildTarget namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup);
+                string previousProjectDefines = PlayerSettings.GetScriptingDefineSymbols(namedBuildTarget);
+                #else
                 if (buildTargetGroup == BuildTargetGroup.Unknown)
                 {
                     var propertyInfo = typeof(EditorUserBuildSettings).GetProperty("activeBuildTargetGroup", 
@@ -255,10 +261,6 @@ namespace Unity.AutoLOD
                     if (propertyInfo != null)
                         buildTargetGroup = (BuildTargetGroup)propertyInfo.GetValue(null, null);
                 }
-
-                #if HAS_NEW_PACKAGE_MANAGER
-                var previousProjectDefines = PlayerSettings.GetScriptingDefineSymbols(UnityEditor.Build.NamedBuildTarget.Standalone);
-                #else
                 var previousProjectDefines = PlayerSettings.GetScriptingDefineSymbolsForGroup(buildTargetGroup);
                 #endif
                 var projectDefines = previousProjectDefines.Split(';').ToList();
@@ -272,7 +274,7 @@ namespace Unity.AutoLOD
 
                         // This will trigger another re-compile, which needs to happen, so all the custom attributes will be visible
                         #if HAS_NEW_PACKAGE_MANAGER
-                        PlayerSettings.SetScriptingDefineSymbols(UnityEditor.Build.NamedBuildTarget.Standalone, string.Join(";", projectDefines.ToArray()));
+                        PlayerSettings.SetScriptingDefineSymbols(namedBuildTarget, string.Join(";", projectDefines.ToArray()));
                         #else
                         PlayerSettings.SetScriptingDefineSymbolsForGroup(buildTargetGroup, string.Join(";", projectDefines.ToArray()));
                         #endif
