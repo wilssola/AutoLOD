@@ -2,6 +2,10 @@
 #define HAS_MINIMUM_REQUIRED_VERSION
 #endif
 
+#if UNITY_2021_1_OR_NEWER
+#define HAS_NEW_PACKAGE_MANAGER 
+#endif
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -12,6 +16,7 @@ using Unity.AutoLOD.Utilities;
 using UnityEditor;
 using UnityEditor.PackageManager;
 using UnityEngine;
+using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 using UnityObject = UnityEngine.Object;
 
 namespace Unity.AutoLOD
@@ -175,13 +180,33 @@ namespace Unity.AutoLOD
         static IPreferences s_SimplifierPreferences;
 
 #if HAS_MINIMUM_REQUIRED_VERSION
+        #if HAS_NEW_PACKAGE_MANAGER
+        enum PackageStatus
+        {
+            Unknown,
+            Available,
+            InProgress,
+            Failure
+        }
+        #endif
         static IEnumerator GetDefaultSimplifier()
         {
+            PackageStatus status = PackageStatus.Unknown;
+            #if HAS_NEW_PACKAGE_MANAGER
+            var result = PackageInfo.GetAllRegisteredPackages();
+            foreach (var package in result)
+            {
+                if (package.name == "com.whinarn.unitymeshsimplifier")
+                {
+                    status = PackageStatus.Available;
+                    break;
+                }
+            }
+            #else
             var list = Client.List(true);
             while (!list.IsCompleted)
                 yield return null;
 
-            PackageStatus status = PackageStatus.Unknown;
             if (list.Status == StatusCode.Success)
             {
                 foreach (var package in list.Result)
@@ -193,6 +218,7 @@ namespace Unity.AutoLOD
                     }
                 }
             }
+            #endif
 
             if (status != PackageStatus.Available
                 && EditorUtility.DisplayDialog("Install Default Mesh Simplifier?",
@@ -230,20 +256,34 @@ namespace Unity.AutoLOD
                         buildTargetGroup = (BuildTargetGroup)propertyInfo.GetValue(null, null);
                 }
 
+                #if HAS_NEW_PACKAGE_MANAGER
+                var previousProjectDefines = PlayerSettings.GetScriptingDefineSymbols(UnityEditor.Build.NamedBuildTarget.Standalone);
+                #else
                 var previousProjectDefines = PlayerSettings.GetScriptingDefineSymbolsForGroup(buildTargetGroup);
+                #endif
                 var projectDefines = previousProjectDefines.Split(';').ToList();
                 if (!projectDefines.Contains(k_DefaultMeshSimplifierDefine, StringComparer.OrdinalIgnoreCase))
                 {
                     EditorApplication.LockReloadAssemblies();
 
-                    projectDefines.Add(k_DefaultMeshSimplifierDefine);
+                    try
+                    {
+                        projectDefines.Add(k_DefaultMeshSimplifierDefine);
 
-                    // This will trigger another re-compile, which needs to happen, so all the custom attributes will be visible
-                    PlayerSettings.SetScriptingDefineSymbolsForGroup(buildTargetGroup, string.Join(";", projectDefines.ToArray()));
+                        // This will trigger another re-compile, which needs to happen, so all the custom attributes will be visible
+                        #if HAS_NEW_PACKAGE_MANAGER
+                        PlayerSettings.SetScriptingDefineSymbols(UnityEditor.Build.NamedBuildTarget.Standalone, string.Join(";", projectDefines.ToArray()));
+                        #else
+                        PlayerSettings.SetScriptingDefineSymbolsForGroup(buildTargetGroup, string.Join(";", projectDefines.ToArray()));
+                        #endif
 
-                    // Let other systems execute before reloading assemblies
-                    yield return null;
-                    EditorApplication.UnlockReloadAssemblies();
+                        // Let other systems execute before reloading assemblies
+                        yield return null;
+                    }
+                    finally
+                    {
+                        EditorApplication.UnlockReloadAssemblies();
+                    }
                 }
             }
             else if (status != PackageStatus.InProgress)
