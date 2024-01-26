@@ -203,12 +203,17 @@ namespace Unity.AutoLOD.Utilities
         {
             var list = new List<Type>();
             
+            // this blocks the build compilation, because TypeCache is in editor assembly
+            // I'm too lazy to properly wrap project in "#if UNITY_EDITOR"
+            // this method is called only in editor anyway, so I can simply skip part of code without any harm
+            #if UNITY_EDITOR
             foreach (var t in TypeCache.GetTypesDerivedFrom(type))
             {
                 if (!t.IsInterface && !t.IsAbstract && (predicate == null || predicate(t))
                     && t.GetCustomAttribute<HideInInspector>() == null)
                     list.Add(t);
             };
+            #endif
 
             return list;
         }
