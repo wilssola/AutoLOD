@@ -34,6 +34,20 @@ namespace Unity.AutoLOD
         {
             if (!go.GetComponentInChildren<LODGroup>() && meshSimplifierType != null && IsEditable(assetPath))
             {
+                var lodData = GetLODData(assetPath);
+                var overrideDefaults = lodData.overrideDefaults;
+                var importSettings = lodData.importSettings;
+
+                // It's possible to override defaults to either generate on import or to not generate and use specified
+                // LODs in the override, but in the case where we are not overriding and globally we are not generating
+                // on import, then there should be no further processing.
+                if (!overrideDefaults && !enabled)
+                    return;
+
+                // skip unnecessary processing no generation on import
+                if (!importSettings.generateOnImport)
+                    return;
+
                 if (go.GetComponentsInChildren<SkinnedMeshRenderer>().Any())
                 {
                     Debug.LogWarning("Automatic LOD generation on skinned meshes is not currently supported");
@@ -72,16 +86,6 @@ namespace Unity.AutoLOD
 
                 var meshLODs = new List<IMeshLOD>();
                 var preprocessMeshes = new HashSet<int>();
-
-                var lodData = GetLODData(assetPath);
-                var overrideDefaults = lodData.overrideDefaults;
-                var importSettings = lodData.importSettings;
-
-                // It's possible to override defaults to either generate on import or to not generate and use specified
-                // LODs in the override, but in the case where we are not overriding and globally we are not generating
-                // on import, then there should be no further processing.
-                if (!overrideDefaults && !enabled)
-                    return;
 
                 if (importSettings.generateOnImport)
                 {
