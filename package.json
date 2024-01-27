@@ -1,8 +1,8 @@
 {
-  "name": "com.unity.autolod",
+  "name": "com.stcost.autolod",
   "displayName": "AutoLOD",
-  "version": "0.0.2",
-  "unity": "2018.4",
+  "version": "0.1.0",
+  "unity": "2023.0",
   "description": "Automatic LOD generation",
   "keywords": [
     "autolod",
@@ -17,7 +17,7 @@
     "optimization"
   ],
   "author": {
-    "name": "Unity"
+    "name": "StCost"
   },
-  "bugs": "https://github.com/Unity-Technologies/AutoLOD/issues"
+  "bugs": "https://github.com/StCost/AutoLOD/issues"
 }
